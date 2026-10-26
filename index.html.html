@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Present Simple World - Interactive Learning</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            purple: '#6C5CE7',
+                            pink: '#FD79A8',
+                            yellow: '#FDCB6E',
+                            green: '#00B894',
+                            blue: '#0984E3',
+                            orange: '#E17055',
+                            dark: '#2D3436'
+                        }
+                    },
+                    fontFamily: {
+                        heading: ['Fredoka', 'sans-serif'],
+                        body: ['Nunito', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #74b9ff 0%, #a29bfe 50%, #6c5ce7 100%);
+            min-height: 100vh;
+        }
+        .font-heading {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 3px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.25);
+        }
+        .btn-bounce {
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .btn-bounce:hover {
+            transform: translateY(-3px) scale(1.03);
+        }
+        .btn-bounce:active {
+            transform: translateY(1px) scale(0.97);
+        }
+        .word-chip {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+        .word-chip:hover {
+            transform: translateY(-2px);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6C5CE7;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-6 min-h-screen flex items-center justify-center">
+
+    <!-- MAIN WRAPPER -->
+    <div class="w-full max-w-5xl glass-panel rounded-3xl p-4 sm:p-8 my-auto relative overflow-hidden">
+        
+        <!-- GLOBAL APP NAVIGATION HEADER -->
+        <header class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6 pb-4 border-b-2 border-indigo-100">
+            <div class="flex items-center gap-3 text-center sm:text-left">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-purple to-brand-pink text-white flex items-center justify-center text-2xl shadow-md font-heading">
+                    <i class="fa-solid fa-clock"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-800 font-heading tracking-wide leading-none">
+                        Present Simple <span class="text-brand-purple">World!</span>
+                    </h1>
+                    <p class="text-xs sm:text-sm font-semibold text-indigo-600 mt-1">Master Routines, Habits & Grammar Rules</p>
+                </div>
+            </div>
+
+            <!-- Module Selector Tabs -->
+            <nav id="app-nav" class="hidden flex-wrap justify-center gap-2">
+                <button onclick="switchModule('module-1')" id="nav-module-1" class="px-3.5 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm transition flex items-center gap-1.5 bg-brand-purple text-white shadow-md">
+                    <i class="fa-solid fa-book-open"></i> 1. Flashcards & Guide
+                </button>
+                <button onclick="switchModule('module-2')" id="nav-module-2" class="px-3.5 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm transition flex items-center gap-1.5 bg-white text-gray-600 hover:bg-indigo-50 border border-gray-200">
+                    <i class="fa-solid fa-puzzle-piece"></i> 2. Sentence Builder
+                </button>
+                <button onclick="switchModule('module-3')" id="nav-module-3" class="px-3.5 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm transition flex items-center gap-1.5 bg-white text-gray-600 hover:bg-indigo-50 border border-gray-200">
+                    <i class="fa-solid fa-circle-question"></i> 3. Quiz Challenge
+                </button>
+            </nav>
+        </header>
+
+        <!-- REAL-TIME PLAYERS SCOREBAR (Visible when game active) -->
+        <div id="live-scoreboard" class="hidden mb-6 bg-gradient-to-r from-indigo-900 to-purple-900 text-white p-3.5 rounded-2xl shadow-md">
+            <div class="flex items-center justify-between mb-2 pb-2 border-b border-indigo-700/50 text-xs font-bold uppercase tracking-wider text-indigo-200">
+                <span><i class="fa-solid fa-trophy text-brand-yellow"></i> Live Accuracy Scoreboard (%)</span>
+                <span id="active-turn-indicator" class="text-brand-yellow font-extrabold font-heading">Current Turn: Alex</span>
+            </div>
+            <div id="players-mini-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                <!-- Dynamic Player Score Cards -->
+            </div>
+        </div>
+
+        <!-- ================= SECTION 0: PLAYER SETUP SCREEN ================= -->
+        <section id="view-setup" class="space-y-6">
+            <div class="text-center max-w-md mx-auto">
+                <span class="bg-indigo-100 text-indigo-700 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">Welcome Students</span>
+                <h2 class="text-2xl sm:text-3xl font-black text-gray-800 font-heading mt-2">Who is playing today?</h2>
+                <p class="text-gray-600 text-sm mt-1">Add players to track accuracy percentages (%) and practice together!</p>
+            </div>
+
+            <div class="max-w-lg mx-auto bg-white p-5 rounded-2xl border-2 border-indigo-100 shadow-sm space-y-4">
+                <div id="player-setup-list" class="space-y-3">
+                    <!-- Player setup rows -->
+                </div>
+
+                <button onclick="addPlayerSetupRow()" class="w-full py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-bold rounded-xl text-sm transition border-2 border-dashed border-indigo-200 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus-circle"></i> Add Another Player
+                </button>
+            </div>
+
+            <div class="text-center pt-2">
+                <button onclick="confirmPlayersAndStart()" class="btn-bounce px-10 py-4 bg-gradient-to-r from-brand-green to-emerald-600 text-white text-xl font-heading font-bold rounded-2xl shadow-xl hover:shadow-emerald-200 inline-flex items-center gap-3">
+                    <i class="fa-solid fa-rocket"></i> START LEARNING
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= MODULE 1: GRAMMAR GUIDE & FLASHCARDS ================= -->
+        <section id="module-1" class="hidden space-y-6">
+            <!-- Concept Tabs -->
+            <div class="flex flex-wrap gap-2 justify-center border-b pb-4">
+                <button onclick="showRuleTab('rules-3rd')" id="tab-rules-3rd" class="rule-tab-btn px-4 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm bg-brand-purple text-white shadow">
+                    3rd Person (-s / -es / -ies)
+                </button>
+                <button onclick="showRuleTab('rules-neg')" id="tab-rules-neg" class="rule-tab-btn px-4 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm bg-gray-100 text-gray-600 hover:bg-indigo-50">
+                    Negatives (don't / doesn't)
+                </button>
+                <button onclick="showRuleTab('rules-quest')" id="tab-rules-quest" class="rule-tab-btn px-4 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm bg-gray-100 text-gray-600 hover:bg-indigo-50">
+                    Questions (Do / Does)
+                </button>
+            </div>
+
+            <!-- Tab 1: 3rd Person Singular Rules & Avatars -->
+            <div id="rules-3rd" class="rule-content-block space-y-4">
+                <div class="bg-indigo-50 p-4 rounded-2xl border border-indigo-100 text-sm text-indigo-900 flex items-start gap-3">
+                    <i class="fa-solid fa-circle-info text-indigo-500 text-xl mt-0.5"></i>
+                    <div>
+                        <strong>3rd Person Singular Rule:</strong> When the subject is <strong>He, She, or It</strong>, we add <strong>-s</strong>, <strong>-es</strong>, or <strong>-ies</strong> to the verb!
+                    </div>
+                </div>
+
+                <!-- Avatar Flashcards Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Avatar 1 -->
+                    <div class="bg-white p-5 rounded-2xl border-2 border-indigo-100 shadow-sm text-center space-y-3 relative">
+                        <div class="w-20 h-20 mx-auto rounded-full bg-pink-100 border-4 border-pink-300 flex items-center justify-center text-4xl">
+                            👩‍🏫
+                        </div>
+                        <span class="bg-pink-100 text-pink-700 text-xs font-extrabold px-2.5 py-0.5 rounded-full">Add -s</span>
+                        <h4 class="font-bold text-gray-800 font-heading text-lg">Sarah (She)</h4>
+                        <p class="text-sm text-gray-600 font-semibold bg-gray-50 p-2 rounded-xl border border-gray-100">"She <strong class="text-brand-purple">plays</strong> guitar every day."</p>
+                        <button onclick="speakText('She plays guitar every day.')" class="btn-bounce w-full py-2 bg-pink-500 hover:bg-pink-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-volume-high"></i> Listen Sentence
+                        </button>
+                    </div>
+
+                    <!-- Avatar 2 -->
+                    <div class="bg-white p-5 rounded-2xl border-2 border-indigo-100 shadow-sm text-center space-y-3 relative">
+                        <div class="w-20 h-20 mx-auto rounded-full bg-amber-100 border-4 border-amber-300 flex items-center justify-center text-4xl">
+                            👨‍🍳
+                        </div>
+                        <span class="bg-amber-100 text-amber-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full">Add -es (-ch, -sh, -o, -x)</span>
+                        <h4 class="font-bold text-gray-800 font-heading text-lg">Chef Leo (He)</h4>
+                        <p class="text-sm text-gray-600 font-semibold bg-gray-50 p-2 rounded-xl border border-gray-100">"He <strong class="text-brand-purple">watches</strong> food shows."</p>
+                        <button onclick="speakText('He watches food shows.')" class="btn-bounce w-full py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-volume-high"></i> Listen Sentence
+                        </button>
+                    </div>
+
+                    <!-- Avatar 3 -->
+                    <div class="bg-white p-5 rounded-2xl border-2 border-indigo-100 shadow-sm text-center space-y-3 relative">
+                        <div class="w-20 h-20 mx-auto rounded-full bg-emerald-100 border-4 border-emerald-300 flex items-center justify-center text-4xl">
+                            🧑‍🎓
+                        </div>
+                        <span class="bg-emerald-100 text-emerald-800 text-xs font-extrabold px-2.5 py-0.5 rounded-full">Consonant + y ➔ -ies</span>
+                        <h4 class="font-bold text-gray-800 font-heading text-lg">Emma (She)</h4>
+                        <p class="text-sm text-gray-600 font-semibold bg-gray-50 p-2 rounded-xl border border-gray-100">"She <strong class="text-brand-purple">studies</strong> English."</p>
+                        <button onclick="speakText('She studies English.')" class="btn-bounce w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-volume-high"></i> Listen Sentence
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Negatives -->
+            <div id="rules-neg" class="rule-content-block hidden space-y-4">
+                <div class="bg-purple-50 p-4 rounded-2xl border border-purple-100 text-sm text-purple-900 flex items-start gap-3">
+                    <i class="fa-solid fa-ban text-purple-500 text-xl mt-0.5"></i>
+                    <div>
+                        <strong>Negative Sentences:</strong> Use <strong>don't</strong> (I/You/We/They) or <strong>doesn't</strong> (He/She/It). The main verb goes back to base form!
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border-2 border-indigo-100 shadow-sm flex items-center gap-4">
+                        <div class="text-4xl">🧑‍🤝‍🧑</div>
+                        <div class="flex-1">
+                            <span class="text-xs font-bold text-brand-purple uppercase">I / You / We / They</span>
+                            <h4 class="font-bold text-gray-800 font-heading">"They <strong class="text-rose-500">don't like</strong> waking up early."</h4>
+                            <button onclick="speakText('They don\'t like waking up early.')" class="mt-2 px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold text-xs rounded-lg flex items-center gap-1.5">
+                                <i class="fa-solid fa-volume-high"></i> Listen
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border-2 border-indigo-100 shadow-sm flex items-center gap-4">
+                        <div class="text-4xl">🐱</div>
+                        <div class="flex-1">
+                            <span class="text-xs font-bold text-brand-purple uppercase">He / She / It</span>
+                            <h4 class="font-bold text-gray-800 font-heading">"The cat <strong class="text-rose-500">doesn't drink</strong> milk."</h4>
+                            <button onclick="speakText('The cat doesn\'t drink milk.')" class="mt-2 px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold text-xs rounded-lg flex items-center gap-1.5">
+                                <i class="fa-solid fa-volume-high"></i> Listen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Questions -->
+            <div id="rules-quest" class="rule-content-block hidden space-y-4">
+                <div class="bg-amber-50 p-4 rounded-2xl border border-amber-200 text-sm text-amber-900 flex items-start gap-3">
+                    <i class="fa-solid fa-circle-question text-amber-500 text-xl mt-0.5"></i>
+                    <div>
+                        <strong>Asking Questions:</strong> Start with <strong>Do</strong> or <strong>Does</strong>. Main verb stays in base form!
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-2xl border-2 border-indigo-100 shadow-sm space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-extrabold">Do + I/you/we/they</span>
+                        </div>
+                        <h4 class="font-bold text-gray-800 font-heading text-lg">"<strong>Do</strong> you live near here?"</h4>
+                        <p class="text-xs text-gray-500">Answers: "Yes, I do." / "No, I don't."</p>
+                        <button onclick="speakText('Do you live near here? Yes, I do.')" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-volume-high"></i> Listen Example
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-2xl border-2 border-indigo-100 shadow-sm space-y-2">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-xs font-extrabold">Does + he/she/it</span>
+                        </div>
+                        <h4 class="font-bold text-gray-800 font-heading text-lg">"<strong>Does</strong> she play soccer?"</h4>
+                        <p class="text-xs text-gray-500">Answers: "Yes, she does." / "No, she doesn't."</p>
+                        <button onclick="speakText('Does she play soccer? No, she doesn\'t.')" class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-lg flex items-center gap-1.5">
+                            <i class="fa-solid fa-volume-high"></i> Listen Example
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center pt-4">
+                <button onclick="switchModule('module-2')" class="btn-bounce px-8 py-3 bg-brand-purple text-white font-heading font-bold rounded-xl shadow-md inline-flex items-center gap-2">
+                    Proceed to Sentence Builder Game <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- ================= MODULE 2: SENTENCE BUILDER GAME ================= -->
+        <section id="module-2" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border-2 border-indigo-100 shadow-sm relative">
+                <div class="flex items-center justify-between mb-4">
+                    <span class="bg-indigo-100 text-indigo-700 text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                        Module 2: Sentence Builder
+                    </span>
+                    <button onclick="speakText(currentModule2Question.sentence)" class="text-brand-purple hover:text-indigo-800 font-bold text-sm flex items-center gap-1">
+                        <i class="fa-solid fa-volume-high"></i> Listen Hint
+                    </button>
+                </div>
+
+                <h3 class="text-xl font-bold text-gray-800 font-heading mb-1" id="m2-prompt">Arrange the words in the correct order:</h3>
+                <p class="text-gray-500 text-xs sm:text-sm mb-6">Tap the word chips below to construct the sentence.</p>
+
+                <!-- Construction Target Container -->
+                <div id="m2-target" class="min-h-[70px] p-3 border-2 border-dashed border-indigo-300 bg-indigo-50/50 rounded-2xl flex flex-wrap gap-2 items-center mb-6">
+                    <span id="m2-placeholder" class="text-gray-400 text-sm font-semibold italic">Tap words from below...</span>
+                </div>
+
+                <!-- Word Bank Container -->
+                <div id="m2-bank" class="flex flex-wrap gap-2 justify-center p-3 bg-gray-50 rounded-2xl border border-gray-200">
+                    <!-- Word chips injected dynamically -->
+                </div>
+
+                <!-- Feedback Area -->
+                <div id="m2-feedback" class="hidden mt-4 p-4 rounded-xl text-sm font-bold border-2"></div>
+
+                <!-- Actions -->
+                <div class="mt-6 flex justify-end gap-3">
+                    <button id="m2-btn-submit" onclick="checkModule2Answer()" class="btn-bounce px-6 py-2.5 bg-brand-green text-white font-heading font-bold rounded-xl shadow">
+                        Check Sentence
+                    </button>
+                    <button id="m2-btn-next" onclick="nextModule2Turn()" class="hidden btn-bounce px-6 py-2.5 bg-brand-purple text-white font-heading font-bold rounded-xl shadow">
+                        Next Player Turn <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= MODULE 3: QUIZ CHALLENGE ================= -->
+        <section id="module-3" class="hidden space-y-6">
+            <div class="bg-white p-6 sm:p-8 rounded-2xl border-2 border-indigo-100 shadow-sm relative">
+                <div class="flex items-center justify-between mb-4">
+                    <span id="m3-category" class="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                        Multiple Choice Practice
+                    </span>
+                    <span id="m3-q-num" class="text-xs font-extrabold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                        Question 1 / 10
+                    </span>
+                </div>
+
+                <h3 id="m3-question-title" class="text-xl sm:text-2xl font-bold text-gray-800 font-heading mb-6">
+                    She _____ her homework right after school.
+                </h3>
+
+                <!-- MCQ Options or Input Area -->
+                <div id="m3-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+                    <!-- MCQ options injected dynamically -->
+                </div>
+
+                <!-- Instant Rule Explanation Box -->
+                <div id="m3-explanation-box" class="hidden p-4 rounded-xl border-2 text-sm leading-relaxed mb-6">
+                    <!-- Injected dynamically -->
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button id="m3-btn-submit" onclick="checkModule3Answer()" class="btn-bounce px-8 py-3 bg-brand-green text-white font-heading font-bold rounded-xl shadow-md">
+                        SUBMIT ANSWER
+                    </button>
+                    <button id="m3-btn-next" onclick="nextModule3Turn()" class="hidden btn-bounce px-8 py-3 bg-brand-purple text-white font-heading font-bold rounded-xl shadow-md">
+                        NEXT TURN <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SECTION 4: FINAL SUMMARY & BADGES ================= -->
+        <section id="view-summary" class="hidden space-y-6 text-center">
+            <div class="py-2">
+                <div class="w-20 h-20 mx-auto rounded-full bg-yellow-100 text-brand-yellow flex items-center justify-center text-4xl mb-3 shadow-inner">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-800 font-heading">Quest Completed!</h2>
+                <p class="text-gray-600 text-sm mt-1">Check out the accuracy scoreboard and final grammar badges!</p>
+            </div>
+
+            <!-- Final Leaderboard Card -->
+            <div class="max-w-xl mx-auto bg-white p-6 rounded-2xl border-2 border-indigo-100 shadow-sm text-left">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 border-b pb-2 flex items-center justify-between">
+                    <span><i class="fa-solid fa-chart-pie"></i> Final Accuracy Scoreboard</span>
+                    <span>Exact % Accuracy</span>
+                </h3>
+
+                <div id="final-scoreboard-list" class="space-y-3">
+                    <!-- Dynamic Final Score Items -->
+                </div>
+            </div>
+
+            <div class="pt-4 flex flex-wrap justify-center gap-4">
+                <button onclick="restartFullGame()" class="btn-bounce px-8 py-3.5 bg-brand-purple text-white font-heading font-bold text-lg rounded-2xl shadow-lg flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Play Again
+                </button>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Web Audio API Sound Synthesizer
+        const AudioSynth = {
+            ctx: null,
+            init() {
+                if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            },
+            playSuccess() {
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            },
+            playWrong() {
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(180, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            }
+        };
+
+        // Web Speech Synthesis Helper
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop current speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // PLAYER DATA & GAME STATE
+        let players = [];
+        let currentPlayerIdx = 0;
+        let currentModule = 'module-1';
+
+        const playerAvatars = ['👩‍🎓', '👨‍🎓', '🐱', '🐶', '🦊', '🦁'];
+        const avatarBgColors = [
+            'bg-pink-500 text-white',
+            'bg-purple-500 text-white',
+            'bg-emerald-500 text-white',
+            'bg-amber-500 text-white',
+            'bg-blue-500 text-white',
+            'bg-rose-500 text-white'
+        ];
+
+        // QUESTION BANKS
+        const MODULE_2_QUESTIONS = [
+            {
+                words: ["She", "plays", "tennis", "every", "Saturday."],
+                sentence: "She plays tennis every Saturday.",
+                hint: "Affirmative sentence with 'She'."
+            },
+            {
+                words: ["They", "don't", "like", "early", "mornings."],
+                sentence: "They don't like early mornings.",
+                hint: "Negative sentence with 'They'."
+            },
+            {
+                words: ["Does", "he", "watch", "TV", "in the evening?"],
+                sentence: "Does he watch TV in the evening?",
+                hint: "Question form starting with 'Does'."
+            },
+            {
+                words: ["My cat", "sleeps", "on the sofa", "all day."],
+                sentence: "My cat sleeps on the sofa all day.",
+                hint: "3rd person singular 'sleeps'."
+            },
+            {
+                words: ["We", "don't", "live", "in London."],
+                sentence: "We don't live in London.",
+                hint: "Negative sentence with 'We'."
+            }
+        ];
+
+        const MODULE_3_QUESTIONS = [
+            {
+                category: "3rd Person Singular (-s/-es/-ies)",
+                title: "Choose the correct form: 'Sarah _____ English every evening.'",
+                type: "mcq",
+                options: ["study", "studies", "studys", "studying"],
+                correct: "studies",
+                explanation: "For verbs ending in a consonant + 'y' (study), change 'y' to 'ies' when using He/She/It."
+            },
+            {
+                category: "Negatives (don't / doesn't)",
+                title: "Complete the sentence: 'Mark _____ drink coffee.'",
+                type: "mcq",
+                options: ["don't", "doesn't", "isn't", "not"],
+                correct: "doesn't",
+                explanation: "Use 'doesn't' for negative Present Simple sentences with He/She/It."
+            },
+            {
+                category: "Questions (Do / Does)",
+                title: "Select the correct question starter: '_____ your friends play soccer?'",
+                type: "mcq",
+                options: ["Do", "Does", "Are", "Is"],
+                correct: "Do",
+                explanation: "'Your friends' is plural (They), so we use 'Do' to form questions."
+            },
+            {
+                category: "3rd Person Singular Rules",
+                title: "Fill in the blank: 'Alex _____ (go) to school by bus.'",
+                type: "fill",
+                correct: "goes",
+                explanation: "The verb 'go' adds '-es' for 3rd person singular (He goes)."
+            },
+            {
+                category: "Frequency Adverbs",
+                title: "Where is the correct word order?",
+                type: "mcq",
+                options: [
+                    "I play usually tennis on Sundays.",
+                    "I usually play tennis on Sundays.",
+                    "Usually I tennis play on Sundays.",
+                    "I play tennis usually on Sundays."
+                ],
+                correct: "I usually play tennis on Sundays.",
+                explanation: "Frequency adverbs (usually, always, never) go BEFORE main verbs."
+            }
+        ];
+
+        let m2Index = 0;
+        let m3Index = 0;
+        let currentModule2Question = null;
+
+        // INIT SETUP
+        window.onload = function() {
+            addPlayerSetupRow("Alex");
+            addPlayerSetupRow("Emma");
+        };
+
+        function addPlayerSetupRow(defaultName = "") {
+            const container = document.getElementById("player-setup-list");
+            const count = container.children.length;
+            if (count >= 6) return;
+
+            const div = document.createElement("div");
+            div.className = "flex items-center gap-3";
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-2xl ${avatarBgColors[count]} flex items-center justify-center font-bold text-lg shadow-sm">
+                    ${playerAvatars[count]}
+                </div>
+                <input type="text" value="${defaultName || 'Player ' + (count + 1)}" class="player-name-val flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl font-bold text-gray-700 text-sm focus:border-indigo-500 focus:outline-none" placeholder="Player Name">
+                ${count >= 1 ? `<button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-red-500 p-2"><i class="fa-solid fa-trash"></i></button>` : `<div class="w-8"></div>`}
+            `;
+            container.appendChild(div);
+        }
+
+        function confirmPlayersAndStart() {
+            const nameInputs = document.querySelectorAll(".player-name-val");
+            players = [];
+
+            nameInputs.forEach((inp, idx) => {
+                const name = inp.value.trim() || `Player ${idx + 1}`;
+                players.push({
+                    id: idx,
+                    name: name,
+                    avatar: playerAvatars[idx],
+                    color: avatarBgColors[idx],
+                    score: 0,
+                    total: 0
+                });
+            });
+
+            if (players.length === 0) return;
+
+            // Hide setup, show navigation and live scorebar
+            document.getElementById("view-setup").classList.add("hidden");
+            document.getElementById("app-nav").classList.remove("hidden");
+            document.getElementById("app-nav").classList.add("flex");
+            document.getElementById("live-scoreboard").classList.remove("hidden");
+
+            currentPlayerIdx = 0;
+            renderLiveScoreboard();
+            switchModule('module-1');
+        }
+
+        function renderLiveScoreboard() {
+            const container = document.getElementById("players-mini-grid");
+            container.innerHTML = "";
+
+            players.forEach((p, idx) => {
+                const pct = p.total > 0 ? Math.round((p.score / p.total) * 100) : 0;
+                const isActive = idx === currentPlayerIdx;
+
+                const card = document.createElement("div");
+                card.className = `p-2 rounded-xl text-center border transition ${isActive ? 'bg-indigo-700 border-brand-yellow ring-2 ring-brand-yellow/50' : 'bg-indigo-950/40 border-indigo-800 opacity-70'}`;
+                card.innerHTML = `
+                    <div class="text-[11px] font-bold text-indigo-200 truncate">${p.avatar} ${p.name}</div>
+                    <div class="text-base font-black text-white font-heading">${pct}%</div>
+                    <div class="text-[10px] text-indigo-300">${p.score}/${p.total} Correct</div>
+                `;
+                container.appendChild(card);
+            });
+
+            const activeP = players[currentPlayerIdx];
+            document.getElementById("active-turn-indicator").innerText = `Current Turn: ${activeP.avatar} ${activeP.name}`;
+        }
+
+        function switchModule(modId) {
+            currentModule = modId;
+
+            // Hide all modules
+            ['module-1', 'module-2', 'module-3', 'view-summary'].forEach(id => {
+                document.getElementById(id).classList.add("hidden");
+            });
+
+            // Update nav active tab styling
+            ['nav-module-1', 'nav-module-2', 'nav-module-3'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (id === `nav-${modId}`) {
+                    btn.className = "px-3.5 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm transition flex items-center gap-1.5 bg-brand-purple text-white shadow-md";
+                } else {
+                    btn.className = "px-3.5 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm transition flex items-center gap-1.5 bg-white text-gray-600 hover:bg-indigo-50 border border-gray-200";
+                }
+            });
+
+            document.getElementById(modId).classList.remove("hidden");
+
+            if (modId === 'module-2') {
+                loadModule2Question();
+            } else if (modId === 'module-3') {
+                loadModule3Question();
+            }
+        }
+
+        // MODULE 1 RULE TABS
+        function showRuleTab(tabId) {
+            document.querySelectorAll('.rule-content-block').forEach(b => b.classList.add('hidden'));
+            document.querySelectorAll('.rule-tab-btn').forEach(btn => {
+                btn.className = "rule-tab-btn px-4 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm bg-gray-100 text-gray-600 hover:bg-indigo-50";
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).className = "rule-tab-btn px-4 py-2 rounded-xl font-heading font-bold text-xs sm:text-sm bg-brand-purple text-white shadow";
+        }
+
+        // MODULE 2: SENTENCE BUILDER LOGIC
+        function loadModule2Question() {
+            currentModule2Question = MODULE_2_QUESTIONS[m2Index % MODULE_2_QUESTIONS.length];
+
+            const target = document.getElementById("m2-target");
+            const bank = document.getElementById("m2-bank");
+            const feedback = document.getElementById("m2-feedback");
+
+            target.innerHTML = `<span id="m2-placeholder" class="text-gray-400 text-sm font-semibold italic">Tap words from below...</span>`;
+            bank.innerHTML = "";
+            feedback.className = "hidden";
+
+            document.getElementById("m2-btn-submit").classList.remove("hidden");
+            document.getElementById("m2-btn-next").classList.add("hidden");
+
+            // Shuffle words
+            const shuffled = [...currentModule2Question.words].sort(() => 0.5 - Math.random());
+
+            shuffled.forEach(w => {
+                const chip = document.createElement("button");
+                chip.className = "word-chip bg-white border-2 border-indigo-200 text-indigo-900 font-bold px-3.5 py-2 rounded-xl shadow-sm text-sm sm:text-base";
+                chip.innerText = w;
+                chip.onclick = () => handleM2ChipClick(chip);
+                bank.appendChild(chip);
+            });
+        }
+
+        function handleM2ChipClick(chip) {
+            const target = document.getElementById("m2-target");
+            const bank = document.getElementById("m2-bank");
+            const placeholder = document.getElementById("m2-placeholder");
+
+            if (chip.parentElement === bank) {
+                if (placeholder) placeholder.style.display = "none";
+                target.appendChild(chip);
+                chip.classList.replace("border-indigo-200", "border-brand-purple");
+                chip.classList.add("bg-indigo-100");
+            } else {
+                bank.appendChild(chip);
+                chip.classList.replace("border-brand-purple", "border-indigo-200");
+                chip.classList.remove("bg-indigo-100");
+                if (target.children.length === 1 && placeholder) placeholder.style.display = "inline";
+            }
+        }
+
+        function checkModule2Answer() {
+            const chips = document.querySelectorAll("#m2-target .word-chip");
+            if (chips.length === 0) {
+                alert("Tap words to construct a sentence first!");
+                return;
+            }
+
+            const built = Array.from(chips).map(c => c.innerText.trim()).join(" ");
+            const isCorrect = built.toLowerCase() === currentModule2Question.sentence.toLowerCase();
+
+            const p = players[currentPlayerIdx];
+            p.total++;
+
+            const feedback = document.getElementById("m2-feedback");
+            feedback.classList.remove("hidden");
+
+            if (isCorrect) {
+                p.score++;
+                AudioSynth.playSuccess();
+                confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
+
+                feedback.className = "mt-4 p-4 rounded-xl text-sm font-bold bg-emerald-50 border-2 border-emerald-300 text-emerald-900";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 text-lg"></i> Great job ${p.name}! Correct sentence: "${currentModule2Question.sentence}"`;
+            } else {
+                AudioSynth.playWrong();
+                feedback.className = "mt-4 p-4 rounded-xl text-sm font-bold bg-rose-50 border-2 border-rose-300 text-rose-900";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-500 text-lg"></i> Not quite! Correct sentence: "${currentModule2Question.sentence}"`;
+            }
+
+            renderLiveScoreboard();
+
+            document.getElementById("m2-btn-submit").classList.add("hidden");
+            document.getElementById("m2-btn-next").classList.remove("hidden");
+        }
+
+        function nextModule2Turn() {
+            m2Index++;
+            currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
+
+            if (m2Index >= MODULE_2_QUESTIONS.length * players.length) {
+                switchModule('module-3');
+            } else {
+                renderLiveScoreboard();
+                loadModule2Question();
+            }
+        }
+
+        // MODULE 3: QUIZ LOGIC
+        function loadModule3Question() {
+            const q = MODULE_3_QUESTIONS[m3Index % MODULE_3_QUESTIONS.length];
+
+            document.getElementById("m3-category").innerText = q.category;
+            document.getElementById("m3-q-num").innerText = `Question ${m3Index + 1} / ${MODULE_3_QUESTIONS.length * players.length}`;
+            document.getElementById("m3-question-title").innerText = q.title;
+
+            const container = document.getElementById("m3-options-container");
+            container.innerHTML = "";
+
+            document.getElementById("m3-explanation-box").classList.add("hidden");
+            document.getElementById("m3-btn-submit").classList.remove("hidden");
+            document.getElementById("m3-btn-next").classList.add("hidden");
+
+            if (q.type === "mcq") {
+                q.options.forEach(opt => {
+                    const btn = document.createElement("button");
+                    btn.className = "m3-opt-btn border-2 border-gray-200 hover:border-indigo-400 bg-white p-3.5 rounded-xl font-bold text-gray-700 text-left transition flex items-center gap-3";
+                    btn.onclick = () => {
+                        document.querySelectorAll('.m3-opt-btn').forEach(b => b.classList.remove('border-brand-purple', 'bg-indigo-50', 'ring-2', 'ring-indigo-300'));
+                        btn.classList.add('border-brand-purple', 'bg-indigo-50', 'ring-2', 'ring-indigo-300');
+                        btn.dataset.selected = "true";
+                    };
+                    btn.innerHTML = `<span class="w-4 h-4 rounded-full border-2 border-gray-400 inline-block"></span> ${opt}`;
+                    container.appendChild(btn);
+                });
+            } else if (q.type === "fill") {
+                container.innerHTML = `
+                    <div class="col-span-2">
+                        <input type="text" id="m3-fill-input" class="w-full p-4 border-2 border-indigo-200 rounded-xl font-bold text-gray-800 text-center text-lg focus:border-brand-purple focus:outline-none" placeholder="Type your answer here..." autocomplete="off">
+                    </div>
+                `;
+            }
+        }
+
+        function checkModule3Answer() {
+            const q = MODULE_3_QUESTIONS[m3Index % MODULE_3_QUESTIONS.length];
+            let userAns = "";
+
+            if (q.type === "mcq") {
+                const selected = document.querySelector('.m3-opt-btn[data-selected="true"]');
+                if (!selected) {
+                    alert("Please select an answer!");
+                    return;
+                }
+                userAns = selected.innerText.trim();
+            } else if (q.type === "fill") {
+                const input = document.getElementById("m3-fill-input");
+                userAns = input ? input.value.trim() : "";
+                if (!userAns) {
+                    alert("Please type your answer!");
+                    return;
+                }
+            }
+
+            const p = players[currentPlayerIdx];
+            p.total++;
+
+            const isCorrect = userAns.toLowerCase() === q.correct.toLowerCase();
+            const expBox = document.getElementById("m3-explanation-box");
+            expBox.classList.remove("hidden");
+
+            if (isCorrect) {
+                p.score++;
+                AudioSynth.playSuccess();
+                confetti({ particleCount: 40, spread: 60, origin: { y: 0.7 } });
+
+                expBox.className = "p-4 rounded-xl border-2 text-sm leading-relaxed mb-6 bg-emerald-50 border-emerald-300 text-emerald-900";
+                expBox.innerHTML = `<strong><i class="fa-solid fa-circle-check"></i> Correct ${p.name}!</strong> ${q.explanation}`;
+            } else {
+                AudioSynth.playWrong();
+                expBox.className = "p-4 rounded-xl border-2 text-sm leading-relaxed mb-6 bg-rose-50 border-rose-300 text-rose-900";
+                expBox.innerHTML = `<strong><i class="fa-solid fa-circle-xmark"></i> Incorrect. Answer: "${q.correct}"</strong><br>${q.explanation}`;
+            }
+
+            renderLiveScoreboard();
+
+            document.getElementById("m3-btn-submit").classList.add("hidden");
+            document.getElementById("m3-btn-next").classList.remove("hidden");
+        }
+
+        function nextModule3Turn() {
+            m3Index++;
+            currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
+
+            if (m3Index >= MODULE_3_QUESTIONS.length * players.length) {
+                showFinalSummary();
+            } else {
+                renderLiveScoreboard();
+                loadModule3Question();
+            }
+        }
+
+        // FINAL SUMMARY & BADGES
+        function showSummaryView() {
+            showFinalSummary();
+        }
+
+        function showFinalSummary() {
+            ['module-1', 'module-2', 'module-3', 'app-nav', 'live-scoreboard'].forEach(id => {
+                document.getElementById(id).classList.add("hidden");
+            });
+
+            document.getElementById("view-summary").classList.remove("hidden");
+
+            // Sort players by accuracy percentage
+            const sorted = [...players].sort((a, b) => {
+                const pctA = a.total > 0 ? (a.score / a.total) : 0;
+                const pctB = b.total > 0 ? (b.score / b.total) : 0;
+                return pctB - pctA;
+            });
+
+            const list = document.getElementById("final-scoreboard-list");
+            list.innerHTML = "";
+
+            sorted.forEach((p, rank) => {
+                const pct = p.total > 0 ? Math.round((p.score / p.total) * 100) : 0;
+
+                let badge = `<span class="font-extrabold text-gray-400">#${rank + 1}</span>`;
+                if (rank === 0) badge = `<i class="fa-solid fa-crown text-amber-400 text-xl"></i>`;
+                else if (rank === 1) badge = `<i class="fa-solid fa-medal text-gray-400 text-xl"></i>`;
+                else if (rank === 2) badge = `<i class="fa-solid fa-award text-amber-600 text-xl"></i>`;
+
+                let levelTitle = "Grammar Master 🏆";
+                if (pct < 50) levelTitle = "Keep Practicing! 💪";
+                else if (pct < 80) levelTitle = "Great Job! ⭐";
+
+                const card = document.createElement("div");
+                card.className = "p-4 rounded-2xl border-2 border-indigo-100 bg-gray-50 flex items-center justify-between gap-4";
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 text-center">${badge}</div>
+                        <div class="w-10 h-10 rounded-2xl ${p.color} flex items-center justify-center font-bold text-lg shadow-sm">
+                            ${p.avatar}
+                        </div>
+                        <div>
+                            <h4 class="font-extrabold text-gray-800 font-heading">${p.name}</h4>
+                            <span class="text-xs text-indigo-600 font-bold">${levelTitle} (${p.score}/${p.total} Correct)</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl font-black font-heading ${pct >= 80 ? 'text-emerald-600' : pct >= 50 ? 'text-amber-600' : 'text-rose-600'}">
+                            ${pct}%
+                        </span>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+
+            confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+        }
+
+        function restartFullGame() {
+            document.getElementById("view-summary").classList.add("hidden");
+            document.getElementById("view-setup").classList.remove("hidden");
+            m2Index = 0;
+            m3Index = 0;
+        }
+    </script>
+</body>
+</html>
